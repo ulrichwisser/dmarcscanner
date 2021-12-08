@@ -120,7 +120,7 @@ func getDMarc(domain string, wg *sync.WaitGroup, threads <-chan string, server s
 	defer wg.Done()
 
 	// get data
-	txt := resolve("_dmarc."+domain, dns.TypeTXT, server, 0)
+	txt := resolve("_dmarc."+dns.Fqdn(domain), dns.TypeTXT, server, 0)
 	_ = <-threads // some other routine can now start to resolve
 
 	// an error occurred, nothing to count
