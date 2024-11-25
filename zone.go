@@ -164,6 +164,8 @@ func getDMarc(domain string, wg *sync.WaitGroup, threads <-chan string, server s
 					pisreje++
 				}
 			}
+		} else {
+			log.Printf("Invalid DMARC: %s %s\n", rr.Header().Name ,strings.Join(rr.(*dns.TXT).Txt, ""))
 		}
 	}
 
