@@ -15,18 +15,14 @@ import (
 //       the overall resolving will be faster (which is counter intuitive but tested to be true)
 const (
 	TIMEOUT    time.Duration = 10 //seconds
-	CONCURRENT uint          = 450
-	EDNS0SIZE  uint16        = 1440
+	CONCURRENT uint          = 100
+	EDNS0SIZE  uint16        = 1232
 )
 
 // Fastest results achieved by using Google and Cloudflare only(!!!)
 var resolvers []string = []string{
 	"1.1.1.1:53", // Cloudflare
 	"8.8.8.8:53", // Google
-	//"9.9.9.9:53", // Quad9
-	//"94.140.14.14:53",   // Adguard
-	//"208.67.222.222:53", // OpenDNS
-	//"64.6.64.6:53", // Verisign
 }
 
 var verbose = 5
@@ -202,6 +198,7 @@ func resolve(qname string, qtype uint16, server string, count uint) *dns.Msg {
 
 	// max three retries
 	if count > 3 {
+		log.Printf("Abort resolving %s, too many errors", qname)
 		return nil
 	}
 
@@ -215,14 +212,16 @@ func resolve(qname string, qtype uint16, server string, count uint) *dns.Msg {
 	// make the query and wait for answer
 	r, _, err := client.Exchange(query, server)
 
-	// check for errors
+	// internal error, repeat
 	if err != nil {
 		log.Printf("%-30s: Error resolving %s (server %s)\n", qname, err, server)
 		return resolve(qname, qtype, server, count+1)
 	}
-	if r == nil {
-		log.Printf("%-30s: No answer (Server %s)\n", qname, server)
-		return resolve(qname, qtype, server, count+1)
+
+	// DNS error, abort resolving
+	if r.Rcode != dns.RcodeSuccess {
+		log.Printf("%-30s: %s (Rcode %d, Server %s)", qname, dns.RcodeToString[r.Rcode], r.Rcode, server)
+		return nil
 	}
 
 	return r
